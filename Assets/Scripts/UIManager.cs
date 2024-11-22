@@ -31,7 +31,7 @@ public class UIManager : MonoBehaviour
         if (SceneManager.GetActiveScene().buildIndex == 1)
         {
             startBtn.interactable = false;
-            LevelsBar.CreateGamesBar(6, Player.GameNum);
+            LevelsBar.CreateGamesBar(8, Player.GameNum);
         }
 
         SetBubaImage();
