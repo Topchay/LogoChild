@@ -8,124 +8,129 @@ public class Level3 : MonoBehaviour
 {
     private UIManager UIManager;
 
-    [SerializeField] private Sprite[] worms;
-    [SerializeField] private Sprite[] trueFalse;
-    [SerializeField] private GameObject winPanel, loosPanel;
-
     [SerializeField] private Text timerText;
-    [SerializeField] private float cTime = 10;
-    private bool timer;
+    [SerializeField] private GameObject winPanel, loosPanel, smiles, timer, daleeButton, levelBar;
 
-    [SerializeField] private Image[] img,apple;
+    [SerializeField] private Sprite[] trueFalse;
 
-    private string[] takesWorm;
+    [SerializeField] private AudioClip audioIntro;
+    [SerializeField] private AudioClip audioWin;
+    [SerializeField] private AudioClip audioLose;
+    private AudioSource audioSource;
 
-    private int countWorms = 0;
+    public Sprite[] smilesSprite;
 
-    void Start()
+    private bool isTimerActive = false;
+    public bool isGameActive = false;
+    private float cTime = 15f;
+    [SerializeField] private int currentNumber = 0;
+
+
+    private void Awake()
     {
-        takesWorm = new string[4];
-        timer = true;
-        winPanel.SetActive(false);
-        loosPanel.SetActive(false);
-        UIManager = FindObjectOfType<UIManager>();
-
-        SetWormsPosition();
-        SetAnimals();
+        audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.clip = audioIntro;
     }
 
-    void SetWormsPosition()
+    public void StartEmiter()
     {
-        for (int i = 0; i < img.Length; i++)
-        {
-            img[i].transform.localPosition = apple[i].transform.localPosition;
-        }
+        daleeButton.SetActive(true);
+    }
+
+    public void ClickStartGame()
+    {
+        smiles.SetActive(true);
+        timer.SetActive(true);
+        levelBar.SetActive(true);
+        if (winPanel != null) winPanel.SetActive(false);
+        if (loosPanel != null) loosPanel.SetActive(false);
+
+        StartCoroutine(PlayAudioAndActivate());
     }
 
     private void Update()
     {
-        if (timer)
-        {
-            cTime -= Time.deltaTime;
-            timerText.text = Mathf.Ceil(cTime).ToString();
-
-            if (cTime <= 0)
-            {
-                loosPanel.SetActive(true);
-                timer = false;
-            }
-        }
+        Timer();
+        Check();
     }
 
-    public void SetAnimals()
+    private IEnumerator PlayAudioAndActivate()
     {
-        ShuffleSmile();
+        audioSource.Play();
 
-        for (int i = 0; i < img.Length; i++)
-        {
-            img[i].sprite = worms[i];
-        }
+        yield return new WaitForSeconds(audioIntro.length);
+
+        isTimerActive = true;
+        isGameActive = true;
     }
 
-    void ShuffleSmile()
+    public void CheckClicked(Sprite image)
     {
-        for (int i = 0; i < worms.Length - 1; i++)
+        if (!isGameActive) return;
+
+        Image currentImageComponent = levelBar.transform.GetChild(currentNumber).GetComponent<Image>();
+
+        if (image == smilesSprite[0]) 
         {
-            int j = Random.Range(i, img.Length);
-
-            Sprite temp = worms[i];
-            worms[i] = worms[j];
-            worms[j] = temp;
-        }
-    }
-
-    public void GetIndexOfBtn(int indexBtn)
-    {
-        takesWorm[countWorms] = img[indexBtn].sprite.name;
-        Destroy(img[indexBtn]);
-        countWorms++;
-
-        if (countWorms == 4)
-        {
-            timer=false;
-            WinGame();
-        }
-
-    }
-
-
-    void WinGame()
-    {
-        bool win = true;
-
-        for (int i = 0; i < takesWorm.Length - 1; i++)
-        {
-            for (int j = i+1; j < takesWorm.Length; j++)
-            {
-                if (takesWorm[i] == takesWorm[j])
-                {
-                    win = false; break;
-                }
-            }
-        }
-
-        if (win)
-        {
-            winPanel.SetActive(true);
-
-            if (Player.GameNum < SceneManager.GetActiveScene().buildIndex + 1)
-            {
-                Player.GameNum++;
-                timer = false;
-                UIManager.SetBubaImage();
-            }
+            currentImageComponent.sprite = trueFalse[1];
         }
         else
         {
-            loosPanel.SetActive(true);
+            currentImageComponent.sprite = trueFalse[0];
         }
+        currentNumber++;
+    }
 
+    private void Timer()
+    {
+        if (isTimerActive)
+        {
+            cTime -= Time.deltaTime;
 
-    print(win);
+            if (cTime <= 0)
+            {
+                Lose();
+            }
+
+            timerText.text = Mathf.Max(0, Mathf.FloorToInt(cTime)).ToString();
+        }
+    }
+
+    private void Check()
+    {
+        if (currentNumber >= 7)
+        {
+            isTimerActive = false;
+            isGameActive = false;
+
+            bool allDone = true;
+            int length = levelBar.transform.childCount;
+
+            for (int i = 0; i < length; i++)
+            {
+                Image imageSlot = levelBar.transform.GetChild(i).GetComponent<Image>();
+                if (imageSlot.sprite == trueFalse[0]) allDone = false;
+            }
+
+            if (!allDone)
+            {
+                Lose();
+            }
+            else Win();
+        }
+    }
+
+    private void Win()
+    {
+        winPanel.SetActive(true);
+        audioSource.clip = audioWin;
+        audioSource.Play();
+    }
+
+    private void Lose()
+    {
+        loosPanel.SetActive(true);
+        audioSource.clip = audioLose;
+        audioSource.Play();
     }
 }

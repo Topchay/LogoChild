@@ -6,94 +6,102 @@ using UnityEngine.UI;
 
 public class Level4 : MonoBehaviour
 {
-    private UIManager UIManager;
+    [SerializeField] private Text timerText;
+    [SerializeField] private GameObject winPanel, loosPanel, worms, apple, timer, daleeButton;
 
-    [SerializeField] private AudioClip[] clips;
-    [SerializeField] private AudioSource aud;
+    [SerializeField] private AudioClip audioIntro;
+    [SerializeField] private AudioClip audioWin;
+    [SerializeField] private AudioClip audioLose;
 
-    [SerializeField] private Sprite[] blin;
-    [SerializeField] private Sprite[] trueFalse;
-    [SerializeField] private GameObject winPanel, loosPanel;
+    public bool isGame = false;
 
-    [SerializeField] private Image[] img;
+    private List<int> numColors = new List<int> {1, 2, 3, 4};
+    private float cTime = 15f;
+    private bool isTimerActive = false;
 
-    private int countClip = 0;
+    private AudioSource audioSource;
 
-    void Start()
+
+    private void Awake()
     {
-        winPanel.SetActive(false);
-        loosPanel.SetActive(false);
-        UIManager = FindObjectOfType<UIManager>();
-
-        SetAnimals();
-    }
-
-    public void PlayClip()
-    {
-        aud.clip = clips[countClip];
-        aud.Play();
+        audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.clip = audioIntro;
     }
 
     private void Update()
     {
+        Timer();
     }
 
-    public void SetAnimals()
+    public void StartEmiter()
     {
-        ShuffleSmile();
-
-        for (int i = 0; i < img.Length; i++)
-        {
-            img[i].sprite = blin[i];
-        }
+        daleeButton.SetActive(true);
     }
 
-    void ShuffleSmile()
+    public void ClickStartGame()
     {
-        for (int i = 0; i < blin.Length - 1; i++)
-        {
-            int j = Random.Range(i, img.Length);
+        worms.SetActive(true);
+        apple.SetActive(true);
+        timer.SetActive(true);
+        if (winPanel != null) winPanel.SetActive(false);
+        if (loosPanel != null) loosPanel.SetActive(false);
 
-            Sprite temp = blin[i];
-            blin[i] = blin[j];
-            blin[j] = temp;
-        }
+        StartCoroutine(PlayAudioAndActivate());  // Запускаем корутину для воспроизведения звука и перехода к следующему кругу
     }
 
-    public void GetIndexOfBtn(int indexBtn)
+    private IEnumerator PlayAudioAndActivate()  // Ждем ее балабольство, потом начинается игра
     {
-        Destroy(img[indexBtn]);
-        countClip++;
+        audioSource.Play();
 
-        if (countClip == 4)
-        {
-            WinGame();
-        }
+        yield return new WaitForSeconds(audioIntro.length);
 
+        isGame = true;
+        isTimerActive = true;
     }
 
-
-    void WinGame()
+    public void CheckClicked(int value)
     {
-        bool win = true;
-
-
-        if (win)
+        if (isGame)
         {
-            winPanel.SetActive(true);
-
-            if (Player.GameNum < SceneManager.GetActiveScene().buildIndex + 1)
+            if (numColors.Contains(value))
             {
-                Player.GameNum++;
-                UIManager.SetBubaImage();
+                numColors.Remove(value);
             }
+
+            CheckWin();
         }
-        else
+    }
+
+    private void CheckWin()
+    {
+        if (numColors.Count == 0)
+        {            
+            isGame = false;
+            isTimerActive = false;
+
+            winPanel.SetActive(true);
+            audioSource.clip = audioWin;
+            audioSource.Play();
+        }
+    }
+
+    private void Timer()
+    {
+        if (isTimerActive)
         {
-            loosPanel.SetActive(true);
+            cTime -= Time.deltaTime;
+
+            if (cTime <= 0)
+            {
+                isGame = false;
+                isTimerActive = false;
+
+                loosPanel.SetActive(true);
+                audioSource.clip = audioLose;
+                audioSource.Play();
+            }
+
+            timerText.text = Mathf.Max(0, Mathf.FloorToInt(cTime)).ToString();
         }
-
-
-    print(win);
     }
 }

@@ -11,11 +11,11 @@ public class Level2 : MonoBehaviour
 
     [SerializeField] private Sprite[] animals;
     [SerializeField] private Sprite[] trueFalse;
-    [SerializeField] private GameObject winPanel,loosPanel;
+    [SerializeField] private GameObject winPanel,loosPanel, daleeButton, planetaSlonov;
 
     [SerializeField] private Text timerText;
     [SerializeField] private float cTime = 20;
-    //private bool timer;
+    private bool timer;
 
     [SerializeField] private Transform bananas;
 
@@ -24,9 +24,16 @@ public class Level2 : MonoBehaviour
 
     private int countBanans = 0;
 
+    public void StartEmiter()
+    {
+        daleeButton.SetActive(true);
+        planetaSlonov.SetActive(true);
+
+    }
+
     void Start()
     {
-        //timer = true;
+        timer = true;
         winPanel.SetActive(false);
         loosPanel.SetActive(false);
         UIManager = FindObjectOfType<UIManager>();
@@ -97,7 +104,7 @@ public class Level2 : MonoBehaviour
             if (Player.GameNum < SceneManager.GetActiveScene().buildIndex+1)
             {
                 Player.GameNum++;
-                //timer=false;
+                timer = false;
                 UIManager.SetBubaImage();
             }
         }
