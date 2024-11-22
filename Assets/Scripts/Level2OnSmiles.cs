@@ -1,21 +1,73 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Level2OnSmiles : MonoBehaviour
 {
-    public void GetIndex()
+    [SerializeField] private Level2 Level2;
+    [SerializeField] private Image imageComponent;
+
+    [SerializeField] private float countdownTime = 2f;     // Время ожидания
+    private float timer = 0f;                              // Таймер для отслеживания времени
+    private bool isCountingDown = false;                   // Флаг для отслеживания состояния таймера
+
+    private void Awake()
     {
-        FindObjectOfType<Level2>().GetIndexOfBtn(transform.GetSiblingIndex());
+        Level2 = FindObjectOfType<Level2>();
+        imageComponent = GetComponent<Image>();
     }
 
-    public void DestroyBanans()
+    private void Update()
     {
-        FindObjectOfType<Level2>().DestroyBananas();
+        CheckSprite();
+
+        if (isCountingDown)
+        {
+            timer += Time.deltaTime;
+
+            if (timer >= countdownTime)
+            {
+                SetImageAlpha(0f);
+                ResetCountdown();
+            }
+        }
     }
 
-    public void SetAnimals()
+    private void CheckSprite()
     {
-        FindObjectOfType<Level2>().SetAnimals();
+        if (imageComponent.sprite == Level2.imgBanan)
+        {
+            if (!isCountingDown)
+            {
+                isCountingDown = true;
+                timer = 0f;
+            }
+        }
+    }
+
+    private void SetImageAlpha(float alpha)
+    {
+        imageComponent.sprite = null;
+
+        Color color = imageComponent.color;
+        color.a = alpha;
+        imageComponent.color = color;
+    }
+
+    private void ResetCountdown()
+    {
+        isCountingDown = false;
+        timer = 0f;
+    }
+
+    private void OnMouseDown()
+    {
+        if (imageComponent.sprite == Level2.imgBanan)
+        {
+            //Level2.BananRespawn();
+            Level2.pointsBanans++;
+
+            SetImageAlpha(0f);
+            ResetCountdown();
+        }
     }
 }

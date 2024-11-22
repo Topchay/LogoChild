@@ -1,112 +1,130 @@
 using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class Level2 : MonoBehaviour
 {
     private UIManager UIManager;
 
-    [SerializeField] private Sprite[] animals;
-    [SerializeField] private Sprite[] trueFalse;
-    [SerializeField] private GameObject winPanel,loosPanel, daleeButton, planetaSlonov;
-
+    [SerializeField] private GameObject[] slotsBanans;
+    [SerializeField] private GameObject winPanel, loosPanel, daleeButton, planetaSlonov;
     [SerializeField] private Text timerText;
-    [SerializeField] private float cTime = 20;
-    private bool timer;
+    [SerializeField] private float cTime = 30;
+    [SerializeField] private float respawnInterval = 2f; // Интервал между спавном бананов
+    [SerializeField] private bool isActive = true;
 
-    [SerializeField] private Transform bananas;
+    [SerializeField] private AudioClip audioIntro;
+    [SerializeField] private AudioClip audioWin;
+    [SerializeField] private AudioClip audioLose;
+    private AudioSource audioSource;
+    private bool isTimerActive = false;
+    private bool isGameActive = false;
 
-    [SerializeField] private Image[] img;
+    public Sprite imgBanan;
+    public int pointsBanans = 0;
 
+    private void Awake()
+    {
+        winPanel.SetActive(false);
+        loosPanel.SetActive(false);
+        UIManager = FindObjectOfType<UIManager>();
 
-    private int countBanans = 0;
+        audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.clip = audioIntro;
+
+    }
 
     public void StartEmiter()
     {
         daleeButton.SetActive(true);
         planetaSlonov.SetActive(true);
-
-    }
-
-    void Start()
-    {
-        timer = true;
-        winPanel.SetActive(false);
-        loosPanel.SetActive(false);
-        UIManager = FindObjectOfType<UIManager>();
-        
-        SetAnimals();
-    }
-
-    IEnumerator Timer(float time)
-    {
-        for (int i = (int)time; i >-1 ; i--)
-        {
-
-            timerText.text = i.ToString();
-            yield return new WaitForSeconds(1);
-        }
-
-        loosPanel.SetActive(true);
     }
 
     public void StartGame()
     {
-        StartCoroutine(Timer(cTime));
+        StartCoroutine(PlayAudioAndActivate());
     }
 
-    public void SetAnimals()
+    private void Update()
     {
-        ShuffleSmile();
+        Timer();
+        CheckWin();
+        CheckLose();
+    }
 
-        for (int i = 0; i < img.Length; i++)
+    private IEnumerator PlayAudioAndActivate()
+    {
+        audioSource.Play();
+
+        yield return new WaitForSeconds(audioIntro.length);
+
+        isTimerActive = true;
+        isGameActive = true;
+        StartCoroutine(BananRespawnCoroutine());
+    }
+
+    private IEnumerator BananRespawnCoroutine()
+    {
+        while (isActive)
         {
-            img[i].sprite = animals[i];
+            BananRespawn();
+            yield return new WaitForSeconds(respawnInterval); // Ждем 3 секунды перед следующим спавном
         }
     }
 
-    void ShuffleSmile()
+    public void BananRespawn()
     {
-        for (int i = 0; i < animals.Length - 1; i++)
-        {
-            int j = Random.Range(i, img.Length);
+        int randomIndex = Random.Range(0, slotsBanans.Length);
+        GameObject chosenSlot = slotsBanans[randomIndex];
+        Image imageComponent = chosenSlot.GetComponent<Image>();
 
-            Sprite temp = animals[i];
-            animals[i] = animals[j];
-            animals[j] = temp;
+        imageComponent.sprite = imgBanan;
+
+        Color currentColor = imageComponent.color;
+        currentColor.a = 1f; // Делаем спрайт видимым
+        imageComponent.color = currentColor;
+    }
+
+    private void Timer()
+    {
+        if (isTimerActive)
+        {
+            cTime -= Time.deltaTime;
+            timerText.text = Mathf.Max(0, Mathf.FloorToInt(cTime)).ToString();
         }
     }
 
-    public void GetIndexOfBtn(int indexBtn)
+    private void CheckWin()
     {
-        if (img[indexBtn].sprite.name.Equals("slon"))
+        if (pointsBanans >= 10)
         {
-            img[indexBtn].GetComponent<Animation>().Play();
-            countBanans++;
+            Win();
         }
     }
 
-    public void DestroyBananas()
+    private void CheckLose()
     {
-        Destroy(bananas.GetChild(0).gameObject);
-        WinGame();
+        if (cTime <= 0)
+        {
+            Lose();
+        }
     }
 
-    void WinGame()
+    private void Win()
     {
-        if (countBanans == 10)
-        {
-            winPanel.SetActive(true);
+        isGameActive = false;
+        isTimerActive = false;
+        winPanel.SetActive(true);
+        audioSource.clip = audioWin;
+        audioSource.Play();
+    }
 
-            if (Player.GameNum < SceneManager.GetActiveScene().buildIndex+1)
-            {
-                Player.GameNum++;
-                timer = false;
-                UIManager.SetBubaImage();
-            }
-        }
+    private void Lose()
+    {
+        isGameActive = false;
+        isTimerActive = false;
+        loosPanel.SetActive(true);
+        audioSource.clip = audioLose;
+        audioSource.Play();
     }
 }
